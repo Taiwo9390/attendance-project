@@ -1,5 +1,5 @@
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "https://attend-sure-t9r4.onrender.com";
 
 const STORAGE_KEYS = {
   theme: "attendsure_theme",
