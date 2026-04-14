@@ -21,6 +21,12 @@ const allowedOrigins = [
   "https://YOUR-NETLIFY-SITE.netlify.app"
 ];
 
+const allowedOrigins = [
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "https://YOUR-NETLIFY-SITE.netlify.app"
+];
+
 app.use(
   cors({
     origin(origin, callback) {
