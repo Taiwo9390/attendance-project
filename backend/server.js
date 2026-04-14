@@ -18,22 +18,17 @@ connectDB();
 const allowedOrigins = [
   "http://localhost:5500",
   "http://127.0.0.1:5500",
-  "https://YOUR-NETLIFY-SITE.netlify.app"
-];
-
-const allowedOrigins = [
-  "http://localhost:5500",
-  "http://127.0.0.1:5500",
-  "https://YOUR-NETLIFY-SITE.netlify.app"
+  "https://attendsure.netlify.app"
 ];
 
 app.use(
   cors({
-    origin(origin, callback) {
+    origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
       }
-      callback(new Error("Not allowed by CORS"));
     }
   })
 );
