@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecturer Dashboard | AttendSure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="lecturer-dashboard.css" />
+</head>
+<body>
+  <div class="bg-orb orb-one"></div>
+  <div class="bg-orb orb-two"></div>
+  <div class="bg-orb orb-three"></div>
+
+  <main class="dashboard-page">
+    <nav class="topbar reveal-up">
+      <a href="index.html" class="logo-wrap">
+        <div class="logo-mark">A</div>
+        <span class="logo-text">AttendSure</span>
+      </a>
+
+      <div class="topbar-actions">
+        <div class="profile-chip" id="lecturer-profile-chip">
+          <div class="profile-avatar" id="lecturer-profile-avatar">--</div>
+          <div class="profile-meta">
+            <strong id="lecturer-profile-name">Lecturer</strong>
+            <span id="lecturer-profile-sub">lecturer@email.com</span>
+          </div>
+        </div>
+
+        <button type="button" class="ghost-btn" id="theme-toggle-btn">Toggle Theme</button>
+        <a href="lecturer-login.html" class="ghost-btn" id="lecturer-logout-btn">Logout</a>
+      </div>
+    </nav>
+
+    <section class="dashboard-header reveal-up delay-1">
+      <p class="eyebrow lecturer-eyebrow">LECTURER DASHBOARD</p>
+      <h1>Manage attendance sessions with confidence</h1>
+      <p class="dashboard-description">
+        Create timed attendance sessions, watch records update, save completed sessions,
+        and review reports from your private lecturer dashboard.
+      </p>
+    </section>
+
+    <section class="dashboard-grid reveal-up delay-2">
+      <div class="session-setup-card">
+        <div class="card-head">
+          <div>
+            <p class="mini-label">SESSION SETUP</p>
+            <h2>Create Attendance Session</h2>
+          </div>
+          <span class="live-pill">Ready</span>
+        </div>
+
+        <form class="session-form">
+          <div class="form-grid">
+            <div class="input-group">
+              <label for="course-code">Course Code</label>
+              <input
+                type="text"
+                id="course-code"
+                placeholder="e.g. CSC401"
+                required
+              />
+            </div>
+
+            <div class="input-group">
+              <label for="course-title">Course Title</label>
+              <input
+                type="text"
+                id="course-title"
+                placeholder="e.g. Software Engineering"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="input-group">
+              <label for="session-number">Attendance Session Number</label>
+              <input
+                type="text"
+                id="session-number"
+                placeholder="e.g. 3"
+                required
+              />
+            </div>
+
+            <div class="input-group select-group">
+              <label for="duration">Session Duration</label>
+              <select id="duration" required>
+                <option value="30">30 seconds</option>
+                <option value="45">45 seconds</option>
+                <option value="60" selected>1 minute</option>
+                <option value="90">90 seconds</option>
+                <option value="120">2 minutes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="topic">Topic (Optional)</label>
+            <input
+              type="text"
+              id="topic"
+              placeholder="e.g. Introduction to UML"
+            />
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="primary-btn">Start Session</button>
+            <button type="button" class="secondary-btn">Clear Form</button>
+            <button type="button" class="danger-btn">End Session</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="live-session-card">
+        <div class="card-head">
+          <div>
+            <p class="mini-label">LIVE SESSION</p>
+            <h2>Current Session Status</h2>
+          </div>
+          <span class="status-pill active-pill">Live</span>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-item">
+            <span>Course</span>
+            <strong>Not Set</strong>
+          </div>
+
+          <div class="meta-item">
+            <span>Session</span>
+            <strong>Not Set</strong>
+          </div>
+        </div>
+
+        <div class="session-code-box">
+          <span>Session Code</span>
+          <h3>------</h3>
+          <p>Share this code with students in class.</p>
+        </div>
+
+        <div class="countdown-box">
+          <div class="countdown-head">
+            <span>Countdown</span>
+            <span>00:00</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="quick-stats-grid">
+          <div class="quick-stat-card">
+            <span>Confirmed</span>
+            <strong id="confirmed-count">0</strong>
+          </div>
+
+          <div class="quick-stat-card">
+            <span>Total</span>
+            <strong id="total-count">0</strong>
+          </div>
+
+          <div class="quick-stat-card">
+            <span>Incomplete</span>
+            <strong id="incomplete-count">0</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="report-section reveal-up delay-3">
+      <div class="report-head">
+        <div>
+          <p class="mini-label">ATTENDANCE REPORT</p>
+          <h2 id="report-session-title">No Active Session</h2>
+          <p id="report-session-subtitle">Start a session to view attendance records.</p>
+        </div>
+
+        <div class="report-actions">
+          <button type="button" class="ghost-btn" id="back-to-active-btn">Back to Active Session</button>
+          <button type="button" class="primary-btn report-btn" id="download-report-btn">Download Report</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>S/N</th>
+              <th>Full Name</th>
+              <th>Department</th>
+              <th>Level</th>
+              <th>Matric Number</th>
+              <th>Attendance</th>
+              <th>Status Tag</th>
+            </tr>
+          </thead>
+          <tbody id="attendance-report-body">
+            <tr>
+              <td colspan="7" class="empty-row">No active or selected session found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="history-shell reveal-up delay-4">
+      <div class="history-toggle-row">
+        <button type="button" class="history-toggle-btn" id="history-toggle-btn">
+          <span>Session History</span>
+          <span class="history-badge" id="history-badge">0</span>
+        </button>
+      </div>
+
+      <div class="history-section" id="history-section" style="display: none;">
+        <div class="report-head history-head">
+          <div>
+            <p class="mini-label">SAVED SESSIONS</p>
+            <h2>Past Attendance Sessions</h2>
+            <p>Open any saved session to review its report.</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="report-table history-table">
+            <thead>
+              <tr>
+                <th>S/N</th>
+                <th>Course Code</th>
+                <th>Course Title</th>
+                <th>Session Number</th>
+                <th>Date Ended</th>
+                <th>Time Ended</th>
+                <th>Total Records</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="session-history-body">
+              <tr>
+                <td colspan="8" class="empty-row">No past sessions yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+  <div id="app-alert" class="app-alert"></div>
+</body>
+</html>

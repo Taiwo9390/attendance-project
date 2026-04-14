@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance Verification | AttendSure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="student-verification.css" />
+</head>
+<body>
+  <div class="bg-orb orb-one"></div>
+  <div class="bg-orb orb-two"></div>
+  <div class="bg-orb orb-three"></div>
+
+  <main class="verification-page">
+    <nav class="topbar reveal-up">
+      <a href="index.html" class="logo-wrap">
+        <div class="logo-mark">A</div>
+        <span class="logo-text">AttendSure</span>
+      </a>
+
+      <div class="topbar-actions">
+        <div class="profile-chip" id="student-profile-chip">
+          <div class="profile-avatar" id="student-profile-avatar">--</div>
+          <div class="profile-meta">
+            <strong id="student-profile-name">Student</strong>
+            <span id="student-profile-sub">Matric Number</span>
+          </div>
+        </div>
+
+        <button type="button" class="ghost-btn" id="theme-toggle-btn">Toggle Theme</button>
+        <a href="student-settings.html" class="ghost-btn">Settings</a>
+        <a href="student-login.html" class="ghost-btn" id="student-logout-btn">Logout</a>
+      </div>
+    </nav>
+
+    <section class="page-header reveal-up delay-1">
+      <p class="eyebrow">STUDENT VERIFICATION</p>
+      <h1>Enter your session code to begin attendance verification</h1>
+      <p class="page-description">
+        Your class details stay hidden until the correct lecturer code is entered.
+        This helps prevent confusion when multiple classes are running.
+      </p>
+    </section>
+
+    <section class="verification-grid single-column reveal-up delay-2">
+      <div class="verification-card">
+        <div class="card-glow"></div>
+
+        <p class="mini-label">VERIFY ATTENDANCE</p>
+        <h2>Enter Session Code</h2>
+        <p class="card-description">
+          Input the lecturer’s session code correctly to reveal your course details
+          and begin verification.
+        </p>
+
+        <form class="verification-form">
+          <div class="input-group">
+            <label for="session-code">Session Code</label>
+            <input
+              type="text"
+              id="session-code"
+              placeholder="Enter lecturer code"
+              maxlength="6"
+            />
+          </div>
+
+          <button type="button" class="primary-btn">Verify Attendance</button>
+        </form>
+
+        <div class="session-info-card hidden-card" id="revealed-session-info">
+          <div class="card-head">
+            <div>
+              <p class="mini-label">MATCHED CLASS SESSION</p>
+              <h2 id="revealed-session-title">Course Session</h2>
+            </div>
+            <span class="live-pill">Matched</span>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-box">
+              <span>Course Code</span>
+              <strong id="revealed-course-code">Not Available</strong>
+            </div>
+
+            <div class="info-box">
+              <span>Course Title</span>
+              <strong id="revealed-course-title">Not Available</strong>
+            </div>
+
+            <div class="info-box">
+              <span>Session Number</span>
+              <strong id="revealed-session-number">Not Available</strong>
+            </div>
+
+            <div class="info-box">
+              <span>Duration</span>
+              <strong id="revealed-duration">Not Available</strong>
+            </div>
+          </div>
+
+          <div class="warning-box">
+            <span class="warning-title">Important</span>
+            <p>
+              Do not switch tabs, minimize your browser, or leave this page while
+              verification is running. Doing so may mark your attendance as incomplete.
+            </p>
+          </div>
+        </div>
+
+        <div class="countdown-card hidden-card" id="countdown-card">
+          <div class="countdown-head">
+            <span>Verification Countdown</span>
+            <span>00:00</span>
+          </div>
+
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="status-panel pending-panel hidden-card">
+          <div class="status-icon">⌛</div>
+          <div>
+            <h3>Verification in Progress</h3>
+            <p>Stay on this page until the timer ends to confirm your attendance.</p>
+          </div>
+        </div>
+
+        <div class="status-panel success-panel hidden-card">
+          <div class="status-icon">✅</div>
+          <div>
+            <h3>Attendance Confirmed</h3>
+            <p>Your attendance has been successfully recorded for this class session.</p>
+          </div>
+        </div>
+
+        <div class="status-panel incomplete-panel hidden-card">
+          <div class="status-icon">⚠</div>
+          <div>
+            <h3>Attendance Incomplete</h3>
+            <p>You left the verification page too early or did not complete the countdown.</p>
+          </div>
+        </div>
+
+        <div class="status-panel expired-panel hidden-card">
+          <div class="status-icon">❌</div>
+          <div>
+            <h3>Session Expired</h3>
+            <p>The attendance window has ended. Contact your lecturer if necessary.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+  <div id="app-alert" class="app-alert"></div>
+</body>
+</html>

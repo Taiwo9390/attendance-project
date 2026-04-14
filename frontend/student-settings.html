@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Settings | AttendSure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="student-settings.css" />
+</head>
+<body>
+  <div class="bg-orb orb-one"></div>
+  <div class="bg-orb orb-two"></div>
+  <div class="bg-orb orb-three"></div>
+
+  <main class="settings-page">
+    <nav class="topbar reveal-up">
+      <a href="index.html" class="logo-wrap">
+        <div class="logo-mark">A</div>
+        <span class="logo-text">AttendSure</span>
+      </a>
+
+      <div class="topbar-actions">
+        <div class="profile-chip" id="student-profile-chip">
+          <div class="profile-avatar" id="student-profile-avatar">--</div>
+          <div class="profile-meta">
+            <strong id="student-profile-name">Student</strong>
+            <span id="student-profile-sub">Matric Number</span>
+          </div>
+        </div>
+
+        <button type="button" class="ghost-btn" id="theme-toggle-btn">Toggle Theme</button>
+        <a href="student-verification.html" class="ghost-btn">Back</a>
+        <a href="student-login.html" class="ghost-btn" id="student-logout-btn">Logout</a>
+      </div>
+    </nav>
+
+    <section class="settings-header reveal-up delay-1">
+      <p class="eyebrow">STUDENT SETTINGS</p>
+      <h1>Manage your academic profile</h1>
+      <p class="settings-description">
+        Update your level when you move to a new academic stage. Your identity
+        details remain attached to your attendance records.
+      </p>
+    </section>
+
+    <section class="settings-grid reveal-up delay-2">
+      <div class="profile-card">
+        <div class="card-head">
+          <div>
+            <p class="mini-label">PROFILE OVERVIEW</p>
+            <h2>Your Academic Identity</h2>
+          </div>
+          <span class="status-pill">Active</span>
+        </div>
+
+        <div class="profile-list">
+          <div class="profile-item">
+            <span>Full Name</span>
+            <strong id="profile-full-name">Not set</strong>
+          </div>
+
+          <div class="profile-item">
+            <span>Matric Number</span>
+            <strong id="profile-matric">Not set</strong>
+          </div>
+
+          <div class="profile-item">
+            <span>Department</span>
+            <strong id="profile-department">Not set</strong>
+          </div>
+
+          <div class="profile-item">
+            <span>Current Level</span>
+            <strong id="profile-level">Not set</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="card-head">
+          <div>
+            <p class="mini-label">EDIT SETTINGS</p>
+            <h2>Update Student Level</h2>
+          </div>
+        </div>
+
+        <form id="student-settings-form">
+          <div class="input-group">
+            <label for="settings-level">Level</label>
+            <select id="settings-level" required>
+              <option value="">Select level</option>
+              <option value="100">100 Level</option>
+              <option value="200">200 Level</option>
+              <option value="300">300 Level</option>
+              <option value="400">400 Level</option>
+              <option value="500">500 Level</option>
+            </select>
+          </div>
+
+          <div class="note-box">
+            <span class="note-title">Note</span>
+            <p>
+              Full name, matric number, and department are treated as identity fields.
+              Only your level is editable here in this MVP.
+            </p>
+          </div>
+
+          <button type="submit" class="primary-btn">Save Changes</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+  <div id="app-alert" class="app-alert"></div>
+</body>
+</html>

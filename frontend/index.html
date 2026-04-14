@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AttendSure | Smart Attendance System</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Background Orbs -->
+  <div class="bg-orb orb-one"></div>
+  <div class="bg-orb orb-two"></div>
+  <div class="bg-orb orb-three"></div>
+
+  <!-- NAVBAR -->
+  <nav class="topbar">
+    <div class="logo-wrap">
+      <div class="logo-mark">A</div>
+      <span class="logo-text">AttendSure</span>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="ghost-btn" id="theme-toggle-btn">Toggle Theme</button>
+      <a href="student-login.html" class="ghost-btn">Student Login</a>
+      <a href="lecturer-login.html" class="primary-btn">Lecturer Login</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1>Smart Attendance Made Simple</h1>
+    <p>
+      AttendSure helps lecturers track attendance in real-time while students
+      verify securely using session codes. Fast, simple, and built for modern classrooms.
+    </p>
+
+    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+      <a href="student-register.html" class="primary-btn">Get Started as Student</a>
+      <a href="lecturer-register.html" class="ghost-btn">Register as Lecturer</a>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="card-grid">
+    <div class="card">
+      <h3>⚡ Instant Attendance</h3>
+      <p>
+        Lecturers create session codes instantly and students verify attendance in seconds.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>📊 Real-time Tracking</h3>
+      <p>
+        Monitor attendance live and see who is present, late, or incomplete.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>🔒 Secure Verification</h3>
+      <p>
+        Students must stay on verification page to ensure genuine attendance.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>📁 Session History</h3>
+      <p>
+        All sessions are saved and can be reviewed or downloaded anytime.
+      </p>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="hero" style="margin-top:40px;">
+    <h1 style="font-size:2rem;">How It Works</h1>
+
+    <div class="card-grid" style="margin-top:20px;">
+      <div class="card">
+        <h3>1. Lecturer Creates Session</h3>
+        <p>Generate a session code with a countdown timer.</p>
+      </div>
+
+      <div class="card">
+        <h3>2. Students Enter Code</h3>
+        <p>Students verify attendance using the session code.</p>
+      </div>
+
+      <div class="card">
+        <h3>3. Live Tracking</h3>
+        <p>Attendance updates instantly on the lecturer dashboard.</p>
+      </div>
+
+      <div class="card">
+        <h3>4. Save & Review</h3>
+        <p>Session gets saved and can be reviewed later.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>© 2026 AttendSure — Smart Attendance System</p>
+  </footer>
+
+  <!-- ALERT -->
+  <div id="app-alert" class="app-alert"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
