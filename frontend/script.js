@@ -1,5 +1,5 @@
 
-const API_BASE = "https://attend-sure-t9r4.onrender.com";
+const API_BASE = "https://attend-sure-t9r4.onrender.com/api";
 
 const STORAGE_KEYS = {
   theme: "attendsure_theme",
@@ -14,6 +14,7 @@ const STORAGE_KEYS = {
   historyBadgeCountBase: "attendsure_history_badge_count",
   verificationContext: "attendsure_verification_context"
 };
+
 
 let lecturerHistoryCache = [];
 let dashboardInterval = null;
