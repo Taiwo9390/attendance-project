@@ -11,7 +11,7 @@ const { protect, lecturerOnly, studentOnly } = require("../middleware/authMiddle
 const router = express.Router();
 
 router.post("/submit", protect, studentOnly, submitAttendance);
-router.patch("/status/:attendanceId", protect, lecturerOnly, updateAttendanceStatus);
+router.patch("/status/:attendanceId", protect, updateAttendanceStatus);
 router.get("/session/:sessionId", protect, lecturerOnly, getSessionAttendance);
 router.get("/student/:sessionId/:matricNumber", protect, getStudentSessionAttendance);
 router.get("/summary/:sessionId", protect, lecturerOnly, getLecturerAttendanceSummary);

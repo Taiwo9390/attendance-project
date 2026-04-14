@@ -120,11 +120,15 @@ exports.updateAttendanceStatus = async (req, res) => {
       });
     }
 
-    if (String(attendance.lecturerId) !== req.user.id && String(attendance.studentId) !== req.user.id) {
+    if (String(attendance.lecturerId) !== req.user.id && 
+        String(attendance.studentId) !== req.user.id
+       )
+       {
       return res.status(403).json({
         message: "You are not allowed to update this attendance record."
       });
     }
+
 
     attendance.status = status;
     await attendance.save();
