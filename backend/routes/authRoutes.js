@@ -1,11 +1,12 @@
 const express = require("express");
-const { protect, studentOnly } = require("../middleware/authMiddleware");
+const { protect, studentOnly, lecturerOnly } = require("../middleware/authMiddleware");
 const {
   registerStudent,
   loginStudent,
   registerLecturer,
   loginLecturer,
   updateStudentProfile,
+  updateLecturerProfile,
   resetStudentPassword,
   resetLecturerPassword
 } = require("../controllers/authController");
@@ -19,6 +20,7 @@ router.post("/students/reset-password", resetStudentPassword);
 
 router.post("/lecturers/register", registerLecturer);
 router.post("/lecturers/login", loginLecturer);
+router.patch("/lecturers/update", protect, lecturerOnly, updateLecturerProfile);
 router.post("/lecturers/reset-password", resetLecturerPassword);
 
 module.exports = router;

@@ -2,66 +2,260 @@ const Attendance = require("../models/Attendance");
 const Session = require("../models/Session");
 const Student = require("../models/Student");
 
+const INACTIVITY_LIMIT_MS = 3000;
+
+function publicAttendance(attendance) {
+  return {
+    _id: attendance._id,
+    sessionId: attendance.sessionId,
+    studentId: attendance.studentId,
+    studentName: attendance.studentName,
+    matricNumber: attendance.matricNumber,
+    department: attendance.department,
+    level: attendance.level,
+    status: attendance.status,
+    submittedAt: attendance.submittedAt,
+    joinedAt: attendance.joinedAt,
+    lastActive: attendance.lastActive,
+    completedAt: attendance.completedAt,
+    isActive: attendance.isActive,
+  };
+}
+
+async function expireSessionIfNeeded(session, now = new Date()) {
+  if (session.status === "active" && now >= session.expiresAt) {
+    session.status = "expired";
+    await session.save();
+  }
+
+  return session;
+}
+
+async function markStaleAttendance(sessionId, now = new Date()) {
+  const staleBefore = new Date(now.getTime() - INACTIVITY_LIMIT_MS);
+
+  await Attendance.updateMany(
+    {
+      sessionId,
+      status: "Pending",
+      isActive: true,
+      lastActive: { $lt: staleBefore },
+    },
+    {
+      $set: {
+        status: "Incomplete",
+        isActive: false,
+        inactiveReason: "Missed heartbeat for more than 3 seconds.",
+        completedAt: now,
+      },
+    }
+  );
+}
+
+async function finalizeExpiredAttendance(session, now = new Date()) {
+  await markStaleAttendance(session._id, now);
+
+  if (now < session.expiresAt) return;
+
+  await Attendance.updateMany(
+    {
+      sessionId: session._id,
+      status: "Pending",
+      isActive: true,
+      lastActive: { $gte: new Date(now.getTime() - INACTIVITY_LIMIT_MS) },
+    },
+    {
+      $set: {
+        status: "Confirmed",
+        isActive: false,
+        completedAt: now,
+      },
+    }
+  );
+
+  await Attendance.updateMany(
+    {
+      sessionId: session._id,
+      status: "Pending",
+      isActive: false,
+    },
+    {
+      $set: {
+        status: "Expired",
+        completedAt: now,
+      },
+    }
+  );
+}
+
 exports.submitAttendance = async (req, res) => {
   try {
     const { sessionCode, matricNumber } = req.body;
+    const normalizedMatric = matricNumber ? matricNumber.toUpperCase().trim() : "";
 
-    if (!sessionCode || !matricNumber) {
+    if (!sessionCode || !normalizedMatric) {
       return res.status(400).json({
-        message: "Please provide session code and matric number."
+        message: "Please provide session code and matric number.",
       });
     }
 
-    if (req.user.matricNumber !== matricNumber.toUpperCase()) {
+    if (req.user.matricNumber !== normalizedMatric) {
       return res.status(403).json({
-        message: "You can only submit attendance for your own student account."
+        message: "You can only submit attendance with your own matric number.",
       });
     }
 
+    const now = new Date();
     const session = await Session.findOne({
-      sessionCode: sessionCode.toUpperCase()
+      sessionCode: sessionCode.toUpperCase().trim(),
     });
 
     if (!session) {
-      return res.status(404).json({
-        message: "No session found with this code."
-      });
+      return res.status(404).json({ message: "Session not found." });
     }
 
-    if (session.status !== "active") {
-      return res.status(400).json({
-        message: "This session is no longer active."
-      });
+    await expireSessionIfNeeded(session, now);
+
+    if (session.status !== "active" || now >= session.expiresAt) {
+      return res.status(400).json({ message: "Session is not active." });
     }
 
-    if (new Date() > session.expiresAt) {
-      session.status = "expired";
-      await session.save();
-
-      return res.status(400).json({
-        message: "This session has expired."
-      });
-    }
-
-    const student = await Student.findOne({
-      matricNumber: matricNumber.toUpperCase()
-    });
+    const student = await Student.findOne({ matricNumber: normalizedMatric });
 
     if (!student) {
-      return res.status(404).json({
-        message: "Student account not found."
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    const activeBlockers = await Attendance.find({
+      studentId: student._id,
+      status: { $in: ["Pending", "Incomplete"] },
+    }).sort({ createdAt: -1 });
+
+    for (const blocker of activeBlockers) {
+      const blockerSession = await Session.findById(blocker.sessionId);
+      if (!blockerSession) continue;
+
+      await expireSessionIfNeeded(blockerSession, now);
+
+      const blockerSessionStillRunning =
+        blockerSession.status === "active" && now < blockerSession.expiresAt;
+
+      if (!blockerSessionStillRunning) continue;
+
+      const blockerLastActive =
+        blocker.lastActive || blocker.joinedAt || blocker.submittedAt;
+      const blockerInactiveForMs =
+        now.getTime() - new Date(blockerLastActive).getTime();
+
+      if (
+        blocker.status === "Pending" &&
+        blocker.isActive &&
+        blockerInactiveForMs > INACTIVITY_LIMIT_MS
+      ) {
+        blocker.status = "Incomplete";
+        blocker.isActive = false;
+        blocker.completedAt = now;
+        blocker.inactiveReason = "Missed heartbeat for more than 3 seconds.";
+        await blocker.save();
+      }
+
+      if (String(blocker.sessionId) === String(session._id)) {
+        if (blocker.status === "Incomplete") {
+          return res.status(403).json({
+            message: "You were marked incomplete and cannot rejoin this session until it ends.",
+            attendance: publicAttendance(blocker),
+          });
+        }
+
+        break;
+      }
+
+      return res.status(409).json({
+        message: "You cannot join another attendance session until your current session ends.",
+        attendance: publicAttendance(blocker),
+      });
+    }
+
+    const lockedAttendance = await Attendance.findOne({
+      studentId: student._id,
+      isActive: true,
+      status: "Pending",
+    });
+
+    if (lockedAttendance) {
+      const lockedSession = await Session.findById(lockedAttendance.sessionId);
+      const lockedLastActive =
+        lockedAttendance.lastActive ||
+        lockedAttendance.joinedAt ||
+        lockedAttendance.submittedAt;
+      const lockedInactiveForMs = now.getTime() - new Date(lockedLastActive).getTime();
+
+      if (
+        !lockedSession ||
+        now >= lockedSession.expiresAt
+      ) {
+        lockedAttendance.status = "Expired";
+        lockedAttendance.isActive = false;
+        lockedAttendance.completedAt = now;
+        lockedAttendance.inactiveReason = "Previous session is no longer active.";
+        await lockedAttendance.save();
+      }
+    }
+
+    if (
+      lockedAttendance &&
+      lockedAttendance.isActive &&
+      String(lockedAttendance.sessionId) !== String(session._id)
+    ) {
+      return res.status(409).json({
+        message: "You already have an active attendance session. Finish it before joining another.",
+        attendance: publicAttendance(lockedAttendance),
       });
     }
 
     const existingAttendance = await Attendance.findOne({
       sessionId: session._id,
-      studentId: student._id
+      studentId: student._id,
     });
 
     if (existingAttendance) {
-      return res.status(400).json({
-        message: "You have already submitted attendance for this session.",
-        attendance: existingAttendance
+      const lastActive =
+        existingAttendance.lastActive ||
+        existingAttendance.joinedAt ||
+        existingAttendance.submittedAt;
+      const inactiveForMs = now.getTime() - new Date(lastActive).getTime();
+
+      if (
+        existingAttendance.status === "Pending" &&
+        existingAttendance.isActive &&
+        inactiveForMs > INACTIVITY_LIMIT_MS
+      ) {
+        existingAttendance.status = "Incomplete";
+        existingAttendance.isActive = false;
+        existingAttendance.completedAt = now;
+        existingAttendance.inactiveReason = "Missed heartbeat for more than 3 seconds.";
+        await existingAttendance.save();
+      }
+
+      if (existingAttendance.status === "Incomplete") {
+        return res.status(403).json({
+          message: "You were marked incomplete and cannot rejoin this session.",
+          attendance: publicAttendance(existingAttendance),
+        });
+      }
+
+      return res.status(200).json({
+        message: "Attendance already exists for this session.",
+        attendance: publicAttendance(existingAttendance),
+        session: {
+          id: session._id,
+          courseCode: session.courseCode,
+          courseTitle: session.courseTitle,
+          sessionNumber: session.sessionNumber,
+          duration: session.duration,
+          expiresAt: session.expiresAt,
+          status: session.status,
+        },
       });
     }
 
@@ -74,27 +268,115 @@ exports.submitAttendance = async (req, res) => {
       department: student.department,
       level: student.level,
       status: "Pending",
-      submittedAt: new Date()
+      submittedAt: now,
+      joinedAt: now,
+      lastActive: now,
+      isActive: true,
     });
 
     res.status(201).json({
-      message: "Attendance submitted successfully.",
-      attendance,
+      message: "Attendance session joined. Keep this page active until the timer ends.",
+      attendance: publicAttendance(attendance),
+      heartbeatEveryMs: 2000,
+      inactivityLimitMs: INACTIVITY_LIMIT_MS,
       session: {
         id: session._id,
         courseCode: session.courseCode,
         courseTitle: session.courseTitle,
         sessionNumber: session.sessionNumber,
-        sessionCode: session.sessionCode,
         duration: session.duration,
         expiresAt: session.expiresAt,
-        status: session.status
-      }
+        status: session.status,
+      },
     });
   } catch (error) {
     res.status(500).json({
       message: "Failed to submit attendance.",
-      error: error.message
+      error: error.message,
+    });
+  }
+};
+
+exports.heartbeat = async (req, res) => {
+  try {
+    const { attendanceId } = req.body;
+
+    if (!attendanceId) {
+      return res.status(400).json({ message: "Attendance ID is required." });
+    }
+
+    const attendance = await Attendance.findById(attendanceId);
+
+    if (!attendance) {
+      return res.status(404).json({ message: "Attendance not found." });
+    }
+
+    if (String(attendance.studentId) !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized attendance heartbeat." });
+    }
+
+    const session = await Session.findById(attendance.sessionId);
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found." });
+    }
+
+    const now = new Date();
+    await expireSessionIfNeeded(session, now);
+
+    if (attendance.status === "Incomplete") {
+      return res.status(403).json({
+        message: "Attendance is incomplete. You cannot rejoin this session.",
+        status: attendance.status,
+      });
+    }
+
+    if (attendance.status !== "Pending") {
+      return res.status(200).json({
+        message: "Attendance already finalized.",
+        status: attendance.status,
+        serverTime: now,
+        expiresAt: session.expiresAt,
+      });
+    }
+
+    const lastActive = attendance.lastActive || attendance.joinedAt || attendance.submittedAt;
+    const inactiveForMs = now.getTime() - new Date(lastActive).getTime();
+
+    if (inactiveForMs > INACTIVITY_LIMIT_MS) {
+      attendance.status = "Incomplete";
+      attendance.isActive = false;
+      attendance.completedAt = now;
+      attendance.inactiveReason = "Missed heartbeat for more than 3 seconds.";
+      await attendance.save();
+
+      return res.status(403).json({
+        message: "Marked incomplete due to inactivity.",
+        status: attendance.status,
+        inactiveForMs,
+      });
+    }
+
+    attendance.lastActive = now;
+
+    if (now >= session.expiresAt) {
+      attendance.status = "Confirmed";
+      attendance.isActive = false;
+      attendance.completedAt = now;
+    }
+
+    await attendance.save();
+
+    res.status(200).json({
+      message: "Heartbeat recorded.",
+      status: attendance.status,
+      serverTime: now,
+      expiresAt: session.expiresAt,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Heartbeat failed.",
+      error: error.message,
     });
   }
 };
@@ -104,43 +386,35 @@ exports.updateAttendanceStatus = async (req, res) => {
     const { attendanceId } = req.params;
     const { status } = req.body;
 
-    const allowedStatuses = ["Pending", "Confirmed", "Incomplete", "Expired"];
-
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({
-        message: "Invalid attendance status."
-      });
+    if (!["Pending", "Confirmed", "Incomplete", "Expired"].includes(status)) {
+      return res.status(400).json({ message: "Invalid attendance status." });
     }
 
     const attendance = await Attendance.findById(attendanceId);
 
     if (!attendance) {
-      return res.status(404).json({
-        message: "Attendance record not found."
-      });
+      return res.status(404).json({ message: "Attendance not found." });
     }
 
-    if (String(attendance.lecturerId) !== req.user.id && 
-        String(attendance.studentId) !== req.user.id
-       )
-       {
-      return res.status(403).json({
-        message: "You are not allowed to update this attendance record."
-      });
-    }
+    const session = await Session.findById(attendance.sessionId);
 
+    if (!session || String(session.lecturerId) !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized." });
+    }
 
     attendance.status = status;
+    attendance.isActive = status === "Pending";
+    attendance.completedAt = status === "Pending" ? null : new Date();
     await attendance.save();
 
     res.status(200).json({
-      message: "Attendance status updated successfully.",
-      attendance
+      message: "Attendance status updated.",
+      attendance: publicAttendance(attendance),
     });
   } catch (error) {
     res.status(500).json({
       message: "Failed to update attendance status.",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -148,33 +422,31 @@ exports.updateAttendanceStatus = async (req, res) => {
 exports.getSessionAttendance = async (req, res) => {
   try {
     const { sessionId } = req.params;
-
     const session = await Session.findById(sessionId);
 
     if (!session) {
-      return res.status(404).json({
-        message: "Session not found."
-      });
+      return res.status(404).json({ message: "Session not found." });
     }
 
     if (String(session.lecturerId) !== req.user.id) {
-      return res.status(403).json({
-        message: "You can only view attendance for your own session."
-      });
+      return res.status(403).json({ message: "Unauthorized." });
     }
 
-    const attendanceRecords = await Attendance.find({ sessionId }).sort({
-      submittedAt: 1
-    });
+    const now = new Date();
+    await finalizeExpiredAttendance(session, now);
+
+    const attendanceRecords = await Attendance.find({ sessionId })
+      .sort({ createdAt: 1 })
+      .lean();
 
     res.status(200).json({
-      message: "Attendance records fetched successfully.",
-      attendanceRecords
+      message: "Attendance records fetched.",
+      attendanceRecords,
     });
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch attendance records.",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -182,45 +454,29 @@ exports.getSessionAttendance = async (req, res) => {
 exports.getStudentSessionAttendance = async (req, res) => {
   try {
     const { sessionId, matricNumber } = req.params;
+    const normalizedMatric = matricNumber.toUpperCase().trim();
 
-    const student = await Student.findOne({
-      matricNumber: matricNumber.toUpperCase()
-    });
-
-    if (!student) {
-      return res.status(404).json({
-        message: "Student account not found."
-      });
-    }
-
-    if (
-      req.user.role === "student" &&
-      req.user.matricNumber !== matricNumber.toUpperCase()
-    ) {
-      return res.status(403).json({
-        message: "You can only view your own attendance record."
-      });
+    if (req.user.role === "student" && req.user.matricNumber !== normalizedMatric) {
+      return res.status(403).json({ message: "Unauthorized." });
     }
 
     const attendance = await Attendance.findOne({
       sessionId,
-      studentId: student._id
+      matricNumber: normalizedMatric,
     });
 
     if (!attendance) {
-      return res.status(404).json({
-        message: "Attendance record not found for this student and session."
-      });
+      return res.status(404).json({ message: "Attendance not found." });
     }
 
     res.status(200).json({
-      message: "Student attendance fetched successfully.",
-      attendance
+      message: "Student attendance fetched.",
+      attendance: publicAttendance(attendance),
     });
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch student attendance.",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -228,55 +484,45 @@ exports.getStudentSessionAttendance = async (req, res) => {
 exports.getLecturerAttendanceSummary = async (req, res) => {
   try {
     const { sessionId } = req.params;
-
     const session = await Session.findById(sessionId);
 
     if (!session) {
-      return res.status(404).json({
-        message: "Session not found."
-      });
+      return res.status(404).json({ message: "Session not found." });
     }
 
     if (String(session.lecturerId) !== req.user.id) {
-      return res.status(403).json({
-        message: "You can only view summary for your own session."
-      });
+      return res.status(403).json({ message: "Unauthorized." });
     }
 
-    const attendanceRecords = await Attendance.find({ sessionId });
+    const now = new Date();
+    await finalizeExpiredAttendance(session, now);
 
-    const confirmed = attendanceRecords.filter(
-      (record) => record.status === "Confirmed"
-    ).length;
+    const rows = await Attendance.aggregate([
+      { $match: { sessionId: session._id } },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]);
 
-    const incomplete = attendanceRecords.filter(
-      (record) => record.status === "Incomplete"
-    ).length;
+    const summary = {
+      total: 0,
+      confirmed: 0,
+      incomplete: 0,
+      expired: 0,
+      pending: 0,
+    };
 
-    const expired = attendanceRecords.filter(
-      (record) => record.status === "Expired"
-    ).length;
-
-    const pending = attendanceRecords.filter(
-      (record) => record.status === "Pending"
-    ).length;
-
-    const total = attendanceRecords.length;
+    rows.forEach((row) => {
+      summary.total += row.count;
+      summary[String(row._id).toLowerCase()] = row.count;
+    });
 
     res.status(200).json({
-      message: "Attendance summary fetched successfully.",
-      summary: {
-        total,
-        confirmed,
-        incomplete,
-        expired,
-        pending
-      }
+      message: "Attendance summary fetched.",
+      summary,
     });
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch attendance summary.",
-      error: error.message
+      error: error.message,
     });
   }
 };

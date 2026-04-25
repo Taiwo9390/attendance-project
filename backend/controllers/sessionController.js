@@ -1,5 +1,11 @@
 const Session = require("../models/Session");
+const Attendance = require("../models/Attendance");
 
+const INACTIVITY_LIMIT_MS = 3000;
+
+/* =========================
+   CODE GENERATION
+========================= */
 function generateSessionCode(length = 6) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
@@ -17,18 +23,19 @@ async function generateUniqueSessionCode() {
 
   while (exists) {
     code = generateSessionCode();
-    const existingSession = await Session.findOne({ sessionCode: code });
-    if (!existingSession) exists = false;
+    const existing = await Session.findOne({ sessionCode: code });
+    if (!existing) exists = false;
   }
 
   return code;
 }
 
+/* =========================
+   CREATE SESSION (SECURE)
+========================= */
 exports.createSession = async (req, res) => {
   try {
     const {
-      lecturerId,
-      lecturerEmail,
       courseCode,
       courseTitle,
       sessionNumber,
@@ -36,15 +43,12 @@ exports.createSession = async (req, res) => {
       topic
     } = req.body;
 
-    if (!lecturerId || !lecturerEmail || !courseCode || !courseTitle || !sessionNumber) {
-      return res.status(400).json({
-        message: "Please provide lecturer, course code, course title, and session number."
-      });
-    }
+    const lecturerId = req.user.id;
+    const lecturerEmail = req.user.email;
 
-    if (req.user.id !== lecturerId || req.user.email !== lecturerEmail.toLowerCase()) {
-      return res.status(403).json({
-        message: "You can only create sessions for your own lecturer account."
+    if (!courseCode || !courseTitle || !sessionNumber) {
+      return res.status(400).json({
+        message: "Course code, title, and session number are required."
       });
     }
 
@@ -54,12 +58,18 @@ exports.createSession = async (req, res) => {
     });
 
     if (existingActiveSession) {
+      if (new Date() >= existingActiveSession.expiresAt) {
+        existingActiveSession.status = "expired";
+        await existingActiveSession.save();
+      } else {
       return res.status(400).json({
-        message: "You already have an active session. End it before creating another one."
+        message: "You already have an active session."
       });
+      }
     }
 
     const sessionCode = await generateUniqueSessionCode();
+
     const durationInSeconds = Number(duration) || 60;
     const startsAt = new Date();
     const expiresAt = new Date(Date.now() + durationInSeconds * 1000);
@@ -78,10 +88,12 @@ exports.createSession = async (req, res) => {
       status: "active"
     });
 
+    // 🔥 IMPORTANT: Only lecturer sees code
     res.status(201).json({
-      message: "Session created successfully.",
+      message: "Session created.",
       session
     });
+
   } catch (error) {
     res.status(500).json({
       message: "Failed to create session.",
@@ -90,15 +102,12 @@ exports.createSession = async (req, res) => {
   }
 };
 
+/* =========================
+   GET ACTIVE SESSION
+========================= */
 exports.getActiveSession = async (req, res) => {
   try {
-    const { lecturerId } = req.params;
-
-    if (req.user.id !== lecturerId) {
-      return res.status(403).json({
-        message: "You can only view your own active session."
-      });
-    }
+    const lecturerId = req.user.id;
 
     const session = await Session.findOne({
       lecturerId,
@@ -107,27 +116,31 @@ exports.getActiveSession = async (req, res) => {
 
     if (!session) {
       return res.status(404).json({
-        message: "No active session found."
+        message: "No active session."
       });
     }
 
-    if (new Date() > session.expiresAt && session.status === "active") {
+    if (new Date() > session.expiresAt) {
       session.status = "expired";
       await session.save();
     }
 
     res.status(200).json({
-      message: "Active session fetched successfully.",
+      message: "Active session fetched.",
       session
     });
+
   } catch (error) {
     res.status(500).json({
-      message: "Failed to fetch active session.",
+      message: "Failed to fetch session.",
       error: error.message
     });
   }
 };
 
+/* =========================
+   END SESSION
+========================= */
 exports.endSession = async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -142,18 +155,53 @@ exports.endSession = async (req, res) => {
 
     if (String(session.lecturerId) !== req.user.id) {
       return res.status(403).json({
-        message: "You can only end your own session."
+        message: "Unauthorized."
       });
     }
 
     session.status = "ended";
     session.endedAt = new Date();
+
     await session.save();
 
+    const staleBefore = new Date(session.endedAt.getTime() - INACTIVITY_LIMIT_MS);
+
+    await Attendance.updateMany(
+      {
+        sessionId: session._id,
+        status: "Pending",
+        lastActive: { $lt: staleBefore }
+      },
+      {
+        $set: {
+          status: "Incomplete",
+          isActive: false,
+          completedAt: session.endedAt,
+          inactiveReason: "Missed heartbeat before session ended."
+        }
+      }
+    );
+
+    await Attendance.updateMany(
+      {
+        sessionId: session._id,
+        status: "Pending",
+        lastActive: { $gte: staleBefore }
+      },
+      {
+        $set: {
+          status: "Confirmed",
+          isActive: false,
+          completedAt: session.endedAt
+        }
+      }
+    );
+
     res.status(200).json({
-      message: "Session ended successfully.",
+      message: "Session ended.",
       session
     });
+
   } catch (error) {
     res.status(500).json({
       message: "Failed to end session.",
@@ -162,30 +210,32 @@ exports.endSession = async (req, res) => {
   }
 };
 
+/* =========================
+   GET LECTURER SESSIONS
+========================= */
 exports.getLecturerSessions = async (req, res) => {
   try {
-    const { lecturerId } = req.params;
+    const lecturerId = req.user.id;
 
-    if (req.user.id !== lecturerId) {
-      return res.status(403).json({
-        message: "You can only view your own sessions."
-      });
-    }
-
-    const sessions = await Session.find({ lecturerId }).sort({ createdAt: -1 });
+    const sessions = await Session.find({ lecturerId })
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
-      message: "Lecturer sessions fetched successfully.",
+      message: "Sessions fetched.",
       sessions
     });
+
   } catch (error) {
     res.status(500).json({
-      message: "Failed to fetch lecturer sessions.",
+      message: "Failed to fetch sessions.",
       error: error.message
     });
   }
 };
 
+/* =========================
+   GET SESSION BY CODE (SAFE)
+========================= */
 exports.getSessionByCode = async (req, res) => {
   try {
     const { sessionCode } = req.params;
@@ -196,7 +246,7 @@ exports.getSessionByCode = async (req, res) => {
 
     if (!session) {
       return res.status(404).json({
-        message: "No session found with this code."
+        message: "Session not found."
       });
     }
 
@@ -207,14 +257,24 @@ exports.getSessionByCode = async (req, res) => {
       }
 
       return res.status(400).json({
-        message: "This session is no longer active."
+        message: "Session is not active."
       });
     }
 
+    // 🔥 DO NOT expose sessionCode to students
     res.status(200).json({
       message: "Session found.",
-      session
+      session: {
+        id: session._id,
+        courseCode: session.courseCode,
+        courseTitle: session.courseTitle,
+        sessionNumber: session.sessionNumber,
+        duration: session.duration,
+        expiresAt: session.expiresAt,
+        status: session.status
+      }
     });
+
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch session.",

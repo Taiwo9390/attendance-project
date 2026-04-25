@@ -43,6 +43,27 @@ const attendanceSchema = new mongoose.Schema(
       enum: ["Pending", "Confirmed", "Incomplete", "Expired"],
       default: "Pending",
     },
+    joinedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    lastActive: {
+      type: Date,
+      default: Date.now,
+    },
+    completedAt: {
+      type: Date,
+      default: null,
+    },
+    inactiveReason: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
     submittedAt: {
       type: Date,
       default: Date.now,
@@ -54,5 +75,7 @@ const attendanceSchema = new mongoose.Schema(
 );
 
 attendanceSchema.index({ sessionId: 1, studentId: 1 }, { unique: true });
+attendanceSchema.index({ studentId: 1, status: 1, isActive: 1 });
+attendanceSchema.index({ sessionId: 1, status: 1, lastActive: 1 });
 
 module.exports = mongoose.model("Attendance", attendanceSchema);
