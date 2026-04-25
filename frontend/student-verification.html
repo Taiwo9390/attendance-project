@@ -11,6 +11,7 @@
     rel="stylesheet"
   />
   <link rel="stylesheet" href="student-verification.css" />
+  <link rel="stylesheet" href="attendsure-ui.css" />
 </head>
 <body>
   <div class="bg-orb orb-one"></div>
@@ -158,6 +159,17 @@
       </div>
     </section>
   </main>
+
+  <div class="leave-warning-modal" id="leave-warning-modal" aria-hidden="true">
+    <div class="leave-warning-dialog" role="dialog" aria-modal="true" aria-labelledby="leave-warning-title">
+      <p class="mini-label">STRICT PRESENCE CHECK</p>
+      <h2 id="leave-warning-title">Stay on this page</h2>
+      <p>
+        Leaving, switching tabs, or minimizing for more than 3 seconds will mark this attendance as incomplete.
+      </p>
+      <button type="button" class="primary-btn" id="stay-on-page-btn">Stay on Page</button>
+    </div>
+  </div>
 
   <script src="script.js"></script>
   <div id="app-alert" class="app-alert"></div>

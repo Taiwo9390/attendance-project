@@ -78,6 +78,17 @@ function formatDisplayTime(dateValue) {
     minute: "2-digit"
   });
 }
+async function sendHeartbeat(attendanceId) {
+  try {
+    return await apiRequest("/attendance/heartbeat", {
+      method: "POST",
+      body: JSON.stringify({ attendanceId })
+    });
+  } catch (error) {
+    console.warn("Heartbeat failed:", error.message);
+    throw error;
+  }
+}
 
 /* =========================
    API Helper
@@ -302,6 +313,7 @@ function initThemeToggle() {
   function updateButtonText() {
     const isLight = document.body.classList.contains("light-theme");
     toggleBtn.textContent = isLight ? "Dark Mode" : "Light Mode";
+    toggleBtn.setAttribute("aria-pressed", String(isLight));
   }
 
   toggleBtn.addEventListener("click", () => {
@@ -328,6 +340,7 @@ function renderLecturerProfileIdentity() {
   const nameEl = document.getElementById("lecturer-profile-name");
   const subEl = document.getElementById("lecturer-profile-sub");
   const avatarEl = document.getElementById("lecturer-profile-avatar");
+  const topbarNameEl = document.getElementById("topbar-lecturer-name");
 
   if (!nameEl || !subEl || !avatarEl) return;
 
@@ -337,6 +350,9 @@ function renderLecturerProfileIdentity() {
   nameEl.textContent = profile.fullName || "Lecturer";
   subEl.textContent = profile.email || "Lecturer Account";
   avatarEl.textContent = getInitials(profile.fullName);
+  if (topbarNameEl) {
+    topbarNameEl.textContent = profile.fullName ? profile.fullName.split(" ")[0] : "Lecturer";
+  }
 }
 
 function renderStudentProfileIdentity() {
@@ -370,10 +386,10 @@ function initPasswordToggle() {
 
       if (input.type === "password") {
         input.type = "text";
-        toggle.textContent = "🙈";
+        toggle.textContent = "Show";
       } else {
         input.type = "password";
-        toggle.textContent = "👁";
+        toggle.textContent = "Show";
       }
     });
   });
@@ -466,7 +482,7 @@ function initStudentLogin() {
 
       setCurrentStudentProfile(normalizedStudent);
 
-      showAppAlert("Student login successful.", "success");
+      showAppAlert("Student access granted.", "success");
       redirectWithDelay("student-verification.html");
     } catch (error) {
       showAppAlert(error.message || "Login failed.", "error");
@@ -704,26 +720,29 @@ function normalizeSessionFromBackend(session) {
 async function renderLecturerAttendanceTable() {
   const tableBody = document.getElementById("attendance-report-body");
   if (!tableBody) return;
+  const reportTitle = document.getElementById("report-session-title");
 
   const selectedHistorySession = getSelectedHistorySession();
   const activeSession = getSession();
   const sourceSession = selectedHistorySession || activeSession;
 
   if (!sourceSession || !sourceSession._id) {
+    if (reportTitle) reportTitle.textContent = "Attendance (0)";
     tableBody.innerHTML = `
       <tr>
-        <td colspan="7" class="empty-row">No active or selected session found.</td>
+        <td colspan="6" class="empty-row">No active or selected session found.</td>
       </tr>
     `;
     return;
   }
 
   const records = await fetchAttendanceRecordsForSession(sourceSession._id);
+  if (reportTitle) reportTitle.textContent = `Attendance (${records.length})`;
 
   if (!records.length) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="7" class="empty-row">No attendance records yet.</td>
+        <td colspan="6" class="empty-row">No attendance records yet.</td>
       </tr>
     `;
     return;
@@ -735,16 +754,21 @@ async function renderLecturerAttendanceTable() {
       if (record.status === "Confirmed") statusClass = "tag-confirmed";
       if (record.status === "Incomplete") statusClass = "tag-incomplete";
       if (record.status === "Expired") statusClass = "tag-expired";
+      const initials = getInitials(record.studentName || record.matricNumber || "Student");
 
       return `
         <tr>
           <td>${index + 1}</td>
-          <td>${escapeHtml(record.studentName || "Not Available")}</td>
-          <td>${escapeHtml(record.department || "Not Available")}</td>
-          <td>${escapeHtml(record.level ? `${record.level} Level` : "Not Available")}</td>
+          <td>
+            <div class="student-cell">
+              <span class="student-avatar">${escapeHtml(initials)}</span>
+              <strong>${escapeHtml(record.studentName || "Not Available")}</strong>
+            </div>
+          </td>
           <td>${escapeHtml(record.matricNumber || "Not Available")}</td>
-          <td>${escapeHtml(record.status || "Pending")}</td>
-          <td><span class="table-tag ${statusClass}">${escapeHtml(record.status || "Pending")}</span></td>
+          <td><span class="table-tag ${statusClass}">● ${escapeHtml(record.status || "Pending")}</span></td>
+          <td>${escapeHtml(record.submittedAt ? formatDisplayTime(record.submittedAt) : "-")}</td>
+          <td class="row-actions">⋮</td>
         </tr>
       `;
     })
@@ -926,6 +950,9 @@ function initLecturerDashboard() {
   const sessionCodeText = document.querySelector(".session-code-box h3");
   const countdownText = document.querySelector(".countdown-head span:last-child");
   const progressFill = document.querySelector(".progress-fill");
+  const liveCourseTitle = document.getElementById("live-course-title");
+  const liveCourseSubtitle = document.getElementById("live-course-subtitle");
+  const liveStartedAt = document.getElementById("live-started-at");
 
   if (!startBtn || !courseCodeInput || !courseTitleInput) return;
 
@@ -940,12 +967,18 @@ function initLecturerDashboard() {
       if (sessionCodeText) sessionCodeText.textContent = "------";
       if (countdownText) countdownText.textContent = "00:00";
       if (progressFill) progressFill.style.width = "0%";
+      if (liveCourseTitle) liveCourseTitle.textContent = "No Active Session";
+      if (liveCourseSubtitle) liveCourseSubtitle.textContent = "Create a session to begin attendance tracking.";
+      if (liveStartedAt) liveStartedAt.textContent = "Not Set";
       return;
     }
 
     if (courseText) courseText.textContent = session.courseCode;
     if (sessionText) sessionText.textContent = `${session.sessionNumber} Attendance`;
     if (sessionCodeText) sessionCodeText.textContent = session.sessionCode;
+    if (liveCourseTitle) liveCourseTitle.textContent = session.courseTitle || "Untitled Course";
+    if (liveCourseSubtitle) liveCourseSubtitle.textContent = `${session.courseCode} - Lecture`;
+    if (liveStartedAt) liveStartedAt.textContent = `${formatDisplayTime(session.createdAt || Date.now())}, ${formatDisplayDate(session.createdAt || Date.now())}`;
 
     updateDashboardCountdown();
   }
@@ -1123,6 +1156,8 @@ function initStudentVerification() {
   const successPanel = document.querySelector(".success-panel");
   const incompletePanel = document.querySelector(".incomplete-panel");
   const expiredPanel = document.querySelector(".expired-panel");
+  const leaveWarningModal = document.getElementById("leave-warning-modal");
+  const stayOnPageBtn = document.getElementById("stay-on-page-btn");
 
   function hideAllPanels() {
     [pendingPanel, successPanel, incompletePanel, expiredPanel].forEach((panel) => {
@@ -1157,24 +1192,15 @@ function initStudentVerification() {
   }
 
   let verificationStarted = false;
-  let pageWasHidden = false;
   let hideTimer = null;
+  let finalizing = false;
   const HIDE_GRACE_PERIOD = 3000;
 
-  async function updateAttendanceOnBackend(attendanceId, status) {
-    try {
-      await apiRequest(`/attendance/status/${attendanceId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status })
-      });
-    } catch (error) {
-      console.error("Attendance status update failed:", error.message);
-    }
-  }
-
   async function handleVerificationSuccess(context) {
-    await updateAttendanceOnBackend(context.attendanceId, "Confirmed");
+    if (finalizing) return;
 
+    finalizing = true;
+    clearInterval(window.heartbeatInterval);
     showPanel(successPanel);
 
     saveResultData({
@@ -1191,10 +1217,11 @@ function initStudentVerification() {
     clearVerificationContext();
     redirectWithDelay("student-success.html", 700);
   }
-
   async function handleVerificationIncomplete(context) {
-    await updateAttendanceOnBackend(context.attendanceId, "Incomplete");
+    if (finalizing) return;
 
+    finalizing = true;
+    clearInterval(window.heartbeatInterval);
     showPanel(incompletePanel);
 
     saveResultData({
@@ -1223,12 +1250,15 @@ function initStudentVerification() {
       if (progressFill) progressFill.style.width = "0%";
 
       clearInterval(verificationInterval);
-
-      if (pageWasHidden) {
-        handleVerificationIncomplete(context);
-      } else {
-        handleVerificationSuccess(context);
-      }
+      sendHeartbeat(context.attendanceId)
+        .then((data) => {
+          if (data.status === "Confirmed") {
+            handleVerificationSuccess(context);
+          } else {
+            handleVerificationIncomplete(context);
+          }
+        })
+        .catch(() => handleVerificationIncomplete(context));
       return;
     }
 
@@ -1241,6 +1271,33 @@ function initStudentVerification() {
 
     if (progressFill) {
       progressFill.style.width = `${percentage}%`;
+    }
+  }
+  if (!navigator.onLine) {
+  showAppAlert("Connection lost. You may lose attendance.", "warning");
+}
+  async function runHeartbeat() {
+    const context = getVerificationContext();
+    if (!context?.attendanceId || finalizing) return;
+
+    if (!navigator.onLine) {
+      showAppAlert("Connection lost. Stay on this page while reconnecting.", "warning");
+      return;
+    }
+
+    try {
+      const data = await sendHeartbeat(context.attendanceId);
+      if (data.status === "Confirmed") {
+        await handleVerificationSuccess(context);
+      }
+    } catch (error) {
+      const message = error.message || "";
+      if (
+        message.toLowerCase().includes("incomplete") ||
+        message.toLowerCase().includes("inactivity")
+      ) {
+        await handleVerificationIncomplete(context);
+      }
     }
   }
 
@@ -1309,7 +1366,8 @@ function initStudentVerification() {
       showPanel(pendingPanel);
 
       verificationStarted = true;
-      pageWasHidden = false;
+      // 🔥 START HEARTBEAT
+      finalizing = false;
 
       verifyBtn.textContent = "Verification Started";
       verifyBtn.disabled = true;
@@ -1320,6 +1378,10 @@ function initStudentVerification() {
       clearInterval(verificationInterval);
       updateStudentCountdown();
       verificationInterval = setInterval(updateStudentCountdown, 1000);
+
+      clearInterval(window.heartbeatInterval);
+      await runHeartbeat();
+      window.heartbeatInterval = setInterval(runHeartbeat, 2000);
     } catch (error) {
       const message = error.message || "Unable to verify session.";
       if (message.toLowerCase().includes("expired") || message.toLowerCase().includes("active")) {
@@ -1334,9 +1396,9 @@ function initStudentVerification() {
 
     if (document.hidden) {
       hideTimer = setTimeout(async () => {
-        pageWasHidden = true;
         const context = getVerificationContext();
         if (context) {
+          showAppAlert("You left the verification page. Backend validation is checking your status.", "warning");
           await handleVerificationIncomplete(context);
         }
       }, HIDE_GRACE_PERIOD);
@@ -1345,6 +1407,31 @@ function initStudentVerification() {
       hideTimer = null;
     }
   });
+
+  window.addEventListener("beforeunload", (event) => {
+    if (!verificationStarted || finalizing) return;
+
+    event.preventDefault();
+    event.returnValue = "Leaving for more than 3 seconds will invalidate your attendance.";
+  });
+
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("a");
+    if (!link || !verificationStarted || finalizing) return;
+
+    event.preventDefault();
+    if (leaveWarningModal) {
+      leaveWarningModal.classList.add("is-visible");
+    } else {
+      showAppAlert("Stay on this page until the timer ends.", "warning");
+    }
+  });
+
+  if (stayOnPageBtn && leaveWarningModal) {
+    stayOnPageBtn.addEventListener("click", () => {
+      leaveWarningModal.classList.remove("is-visible");
+    });
+  }
 }
 
 /* =========================
@@ -1407,6 +1494,9 @@ function initStudentSettings() {
   const matricEl = document.getElementById("profile-matric");
   const deptEl = document.getElementById("profile-department");
   const levelEl = document.getElementById("profile-level");
+  const fullNameInput = document.getElementById("settings-full-name");
+  const matricInput = document.getElementById("settings-matric-number");
+  const departmentInput = document.getElementById("settings-department");
   const levelSelect = document.getElementById("settings-level");
 
   if (!form || !fullNameEl || !profile) return;
@@ -1415,34 +1505,106 @@ function initStudentSettings() {
   matricEl.textContent = profile.matricNumber;
   deptEl.textContent = profile.department;
   levelEl.textContent = `${profile.level} Level`;
+  if (fullNameInput) fullNameInput.value = profile.fullName || "";
+  if (matricInput) matricInput.value = profile.matricNumber || "";
+  if (departmentInput) departmentInput.value = profile.department || "";
   levelSelect.value = profile.level;
 
   form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const fullName = fullNameInput ? fullNameInput.value.trim() : profile.fullName;
+  const matricNumber = matricInput ? matricInput.value.trim().toUpperCase() : profile.matricNumber;
+  const department = departmentInput ? departmentInput.value.trim() : profile.department;
   const newLevel = levelSelect.value;
 
-  if (!newLevel) {
-    showAppAlert("Please select a level.", "warning");
+  if (!fullName || !matricNumber || !department || !newLevel) {
+    showAppAlert("Please complete all profile fields.", "warning");
     return;
   }
 
   try {
     const data = await apiRequest("/auth/students/update", {
       method: "PATCH",
-      body: JSON.stringify({ level: newLevel })
+      body: JSON.stringify({
+        fullName,
+        matricNumber,
+        department,
+        level: newLevel
+      })
     });
+
+    if (data.token) {
+      localStorage.setItem(STORAGE_KEYS.token, data.token);
+    }
 
     setCurrentStudentProfile(data.student);
 
     showAppAlert("Level updated successfully.", "success");
 
-    levelEl.textContent = `${newLevel} Level`;
+    fullNameEl.textContent = data.student.fullName;
+    matricEl.textContent = data.student.matricNumber;
+    deptEl.textContent = data.student.department;
+    levelEl.textContent = `${data.student.level} Level`;
     renderStudentProfileIdentity();
   } catch (error) {
     showAppAlert(error.message, "error");
   }
 });
+}
+
+function initLecturerSettings() {
+  const form = document.getElementById("lecturer-settings-form");
+  const profile = getCurrentLecturerProfile();
+
+  if (!form) return;
+
+  if (!profile) {
+    showAppAlert("Please log in as a lecturer first.", "warning");
+    redirectWithDelay("lecturer-login.html");
+    return;
+  }
+
+  const fullNameView = document.getElementById("lecturer-profile-full-name");
+  const emailView = document.getElementById("lecturer-profile-email");
+  const fullNameInput = document.getElementById("lecturer-settings-full-name");
+  const emailInput = document.getElementById("lecturer-settings-email");
+
+  if (fullNameView) fullNameView.textContent = profile.fullName || "Not set";
+  if (emailView) emailView.textContent = profile.email || "Not set";
+  if (fullNameInput) fullNameInput.value = profile.fullName || "";
+  if (emailInput) emailInput.value = profile.email || "";
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const fullName = fullNameInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
+
+    if (!fullName || !email) {
+      showAppAlert("Please complete all lecturer profile fields.", "warning");
+      return;
+    }
+
+    try {
+      const data = await apiRequest("/auth/lecturers/update", {
+        method: "PATCH",
+        body: JSON.stringify({ fullName, email })
+      });
+
+      if (data.token) {
+        localStorage.setItem(STORAGE_KEYS.token, data.token);
+      }
+
+      setCurrentLecturerProfile(data.lecturer);
+      if (fullNameView) fullNameView.textContent = data.lecturer.fullName;
+      if (emailView) emailView.textContent = data.lecturer.email;
+      renderLecturerProfileIdentity();
+      showAppAlert("Lecturer profile updated successfully.", "success");
+    } catch (error) {
+      showAppAlert(error.message || "Unable to update lecturer profile.", "error");
+    }
+  });
 }
 
 /* =========================
@@ -1565,6 +1727,23 @@ function initDownloadReport() {
   });
 }
 
+function initAttendanceSearch() {
+  const searchInput = document.getElementById("attendance-search");
+  const tableBody = document.getElementById("attendance-report-body");
+
+  if (!searchInput || !tableBody) return;
+
+  searchInput.addEventListener("input", () => {
+    const query = searchInput.value.trim().toLowerCase();
+    const rows = tableBody.querySelectorAll("tr");
+
+    rows.forEach((row) => {
+      if (row.querySelector(".empty-row")) return;
+      row.style.display = row.textContent.toLowerCase().includes(query) ? "" : "none";
+    });
+  });
+}
+
 /* =========================
    Session History UI
 ========================= */
@@ -1666,6 +1845,10 @@ document.addEventListener("DOMContentLoaded", () => {
     initStudentSettings();
   }
 
+  if (document.getElementById("lecturer-settings-form")) {
+    initLecturerSettings();
+  }
+
   if (document.getElementById("course-code")) {
     initLecturerDashboard();
   }
@@ -1677,6 +1860,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initResultPages();
   initPremiumMicroInteractions();
   initDownloadReport();
+  initAttendanceSearch();
   initSessionHistoryToggle();
   initBackToActiveSession();
   initThemeToggle();
@@ -1686,6 +1870,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderLecturerProfileIdentity();
   renderStudentProfileIdentity();
+});
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/service-worker.js")
+      .then(() => console.log("Service Worker Registered"))
+      .catch((err) => console.log("SW failed:", err));
+  });
+}
+// 🔥 NETWORK STATUS
+window.addEventListener("offline", () => {
+  showAppAlert("You are offline. Stay on this page.", "warning");
+});
+
+window.addEventListener("online", () => {
+  showAppAlert("Back online. Syncing...", "success");
 });
 
 

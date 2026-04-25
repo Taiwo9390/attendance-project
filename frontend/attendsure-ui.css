@@ -1,0 +1,319 @@
+/* AttendSure product UI system */
+:root,
+body.light-theme {
+  --as-bg: #f8fafc;
+  --as-surface: #ffffff;
+  --as-surface-soft: #f9fafb;
+  --as-border: #e5e7eb;
+  --as-border-strong: #dbe1ea;
+  --as-text: #111827;
+  --as-muted: #6b7280;
+  --as-muted-2: #8a94a6;
+  --as-primary: #4f46e5;
+  --as-primary-soft: #eef2ff;
+  --as-green: #059669;
+  --as-green-soft: #e9f8ef;
+  --as-yellow: #d97706;
+  --as-yellow-soft: #fff7e6;
+  --as-blue: #2563eb;
+  --as-blue-soft: #eef4ff;
+  --as-red: #dc2626;
+  --as-red-soft: #feecef;
+  --as-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+  --as-radius: 8px;
+  --bg-main: var(--as-bg);
+  --bg-soft: var(--as-bg);
+  --card-bg: var(--as-surface);
+  --card-border: var(--as-border);
+  --text-main: var(--as-text);
+  --text-soft: var(--as-muted);
+  --blue: var(--as-primary);
+  --purple: var(--as-primary);
+  --pink: var(--as-primary);
+  --mint: var(--as-primary);
+  --shadow: var(--as-shadow);
+}
+
+body:not(.light-theme) {
+  --as-bg: #0f172a;
+  --as-surface: #111827;
+  --as-surface-soft: #1f2937;
+  --as-border: #273449;
+  --as-border-strong: #344256;
+  --as-text: #f8fafc;
+  --as-muted: #cbd5e1;
+  --as-muted-2: #94a3b8;
+}
+
+* {
+  letter-spacing: 0;
+}
+
+body {
+  background: var(--as-bg) !important;
+  color: var(--as-text) !important;
+  font-family: Inter, "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+body:not(.light-theme) .topbar,
+body:not(.light-theme) .app-topbar,
+body:not(.light-theme) .app-sidebar,
+body:not(.light-theme) .login-card,
+body:not(.light-theme) .verification-card,
+body:not(.light-theme) .session-info-card,
+body:not(.light-theme) .countdown-card,
+body:not(.light-theme) .settings-card,
+body:not(.light-theme) .profile-card,
+body:not(.light-theme) .success-card,
+body:not(.light-theme) .expired-card,
+body:not(.light-theme) .incomplete-card,
+body:not(.light-theme) .forgot-card,
+body:not(.light-theme) .register-card,
+body:not(.light-theme) .card,
+body:not(.light-theme) .feature-card,
+body:not(.light-theme) .note-box,
+body:not(.light-theme) .detail-box,
+body:not(.light-theme) .status-panel,
+body:not(.light-theme) .live-overview-card,
+body:not(.light-theme) .session-setup-card,
+body:not(.light-theme) .report-section,
+body:not(.light-theme) .history-section,
+body:not(.light-theme) .quick-stat-card {
+  background: var(--as-surface) !important;
+  border-color: var(--as-border) !important;
+  color: var(--as-text) !important;
+}
+
+body:not(.light-theme) .report-table,
+body:not(.light-theme) .report-table th,
+body:not(.light-theme) .report-table td {
+  background: var(--as-surface) !important;
+  color: var(--as-text) !important;
+  border-color: var(--as-border) !important;
+}
+
+.bg-orb,
+.card-glow,
+.success-glow {
+  display: none !important;
+}
+
+.logo-mark {
+  position: relative;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  background: linear-gradient(145deg, #6366f1, #4f46e5) !important;
+  box-shadow: none !important;
+  color: transparent !important;
+}
+
+.logo-mark::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 7px 7px 10px 10px;
+  background: rgba(255, 255, 255, 0.18);
+  clip-path: polygon(50% 0, 100% 18%, 88% 82%, 50% 100%, 12% 82%, 0 18%);
+}
+
+.logo-mark::after {
+  content: "A";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.logo-text {
+  color: var(--as-text) !important;
+  font-weight: 800 !important;
+}
+
+.topbar {
+  background: var(--as-surface);
+  border-bottom: 1px solid var(--as-border);
+  box-shadow: none;
+}
+
+.ghost-btn,
+.secondary-btn,
+.history-toggle-btn,
+.history-view-btn,
+.primary-btn,
+.danger-btn,
+.report-btn {
+  border-radius: var(--as-radius) !important;
+  min-height: 44px;
+  box-shadow: none !important;
+  text-decoration: none;
+}
+
+.ghost-btn,
+.secondary-btn,
+.history-toggle-btn {
+  background: var(--as-surface) !important;
+  border: 1px solid var(--as-border-strong) !important;
+  color: #374151 !important;
+}
+
+.primary-btn,
+.report-btn {
+  background: var(--as-primary) !important;
+  border: 1px solid var(--as-primary) !important;
+  color: #ffffff !important;
+}
+
+.danger-btn {
+  background: var(--as-surface) !important;
+  border: 1px solid var(--as-border-strong) !important;
+  color: #4b5563 !important;
+}
+
+.primary-btn:hover,
+.ghost-btn:hover,
+.secondary-btn:hover,
+.danger-btn:hover,
+.history-toggle-btn:hover,
+.history-view-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08) !important;
+}
+
+.primary-btn:active,
+.ghost-btn:active,
+.secondary-btn:active,
+.danger-btn:active,
+.history-toggle-btn:active,
+.history-view-btn:active,
+.pro-button:active,
+.side-nav-item:active {
+  transform: translateY(0) scale(0.98) !important;
+  filter: saturate(1.2);
+}
+
+.primary-btn:focus-visible,
+.ghost-btn:focus-visible,
+.secondary-btn:focus-visible,
+.danger-btn:focus-visible,
+.history-toggle-btn:focus-visible,
+.history-view-btn:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(79, 70, 229, 0.22) !important;
+  outline-offset: 2px;
+}
+
+.login-card,
+.verification-card,
+.session-info-card,
+.countdown-card,
+.settings-card,
+.profile-card,
+.success-card,
+.expired-card,
+.incomplete-card,
+.forgot-card,
+.register-card,
+.card,
+.feature-card,
+.note-box,
+.detail-box,
+.status-panel {
+  background: var(--as-surface) !important;
+  border: 1px solid var(--as-border) !important;
+  border-radius: var(--as-radius) !important;
+  box-shadow: var(--as-shadow) !important;
+  color: var(--as-text) !important;
+}
+
+.input-group label,
+.mini-label,
+.eyebrow {
+  color: var(--as-muted) !important;
+}
+
+.eyebrow,
+.mini-label {
+  letter-spacing: 0.08em;
+}
+
+.input-group input,
+.input-group select,
+input,
+select {
+  background: var(--as-surface) !important;
+  border: 1px solid var(--as-border-strong) !important;
+  border-radius: var(--as-radius) !important;
+  color: var(--as-text) !important;
+  box-shadow: none !important;
+}
+
+.input-group input:focus,
+.input-group select:focus,
+input:focus,
+select:focus {
+  border-color: var(--as-primary) !important;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12) !important;
+}
+
+.profile-chip {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.profile-avatar,
+.success-ring-inner {
+  background: #e5e7eb !important;
+  color: var(--as-text) !important;
+  box-shadow: none !important;
+}
+
+.live-pill,
+.active-pill,
+.status-pill,
+.status-badge,
+.table-tag {
+  border-radius: 999px !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.tag-confirmed,
+.status-badge,
+.active-pill {
+  color: var(--as-green) !important;
+  background: var(--as-green-soft) !important;
+}
+
+.tag-pending {
+  color: var(--as-yellow) !important;
+  background: var(--as-yellow-soft) !important;
+}
+
+.tag-incomplete {
+  color: var(--as-blue) !important;
+  background: var(--as-blue-soft) !important;
+}
+
+.tag-expired {
+  color: var(--as-red) !important;
+  background: var(--as-red-soft) !important;
+}
+
+.app-alert {
+  border-radius: var(--as-radius) !important;
+  background: #111827 !important;
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    border-radius: 0 !important;
+  }
+}

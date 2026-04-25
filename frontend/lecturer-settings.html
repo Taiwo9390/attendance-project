@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecturer Settings | AttendSure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="student-settings.css" />
+  <link rel="stylesheet" href="attendsure-ui.css" />
+</head>
+<body>
+  <main class="settings-page">
+    <nav class="topbar reveal-up">
+      <a href="index.html" class="logo-wrap">
+        <div class="logo-mark"><span class="brand-a">A</span></div>
+        <span class="logo-text">AttendSure</span>
+      </a>
+
+      <div class="topbar-actions">
+        <div class="profile-chip" id="lecturer-profile-chip">
+          <div class="profile-avatar" id="lecturer-profile-avatar">--</div>
+          <div class="profile-meta">
+            <strong id="lecturer-profile-name">Lecturer</strong>
+            <span id="lecturer-profile-sub">Lecturer Account</span>
+          </div>
+        </div>
+        <button type="button" class="ghost-btn" id="theme-toggle-btn">Theme</button>
+        <a href="lecturer-dashboard.html" class="ghost-btn">Back</a>
+        <a href="lecturer-login.html" class="ghost-btn" id="lecturer-logout-btn">Logout</a>
+      </div>
+    </nav>
+
+    <section class="settings-header reveal-up delay-1">
+      <p class="eyebrow">LECTURER SETTINGS</p>
+      <h1>Manage your lecturer profile</h1>
+      <p class="settings-description">
+        Update your display name or email address used on your AttendSure dashboard.
+      </p>
+    </section>
+
+    <section class="settings-grid reveal-up delay-2">
+      <div class="profile-card">
+        <div class="card-head">
+          <div>
+            <p class="mini-label">PROFILE OVERVIEW</p>
+            <h2>Your Lecturer Identity</h2>
+          </div>
+          <span class="status-pill">Active</span>
+        </div>
+
+        <div class="profile-list">
+          <div class="profile-item">
+            <span>Full Name</span>
+            <strong id="lecturer-profile-full-name">Not set</strong>
+          </div>
+          <div class="profile-item">
+            <span>Email</span>
+            <strong id="lecturer-profile-email">Not set</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="card-head">
+          <div>
+            <p class="mini-label">EDIT SETTINGS</p>
+            <h2>Update Lecturer Profile</h2>
+          </div>
+        </div>
+
+        <form id="lecturer-settings-form">
+          <div class="input-group">
+            <label for="lecturer-settings-full-name">Full Name</label>
+            <input type="text" id="lecturer-settings-full-name" placeholder="Enter your full name" required />
+          </div>
+
+          <div class="input-group">
+            <label for="lecturer-settings-email">Email</label>
+            <input type="email" id="lecturer-settings-email" placeholder="Enter your email" required />
+          </div>
+
+          <button type="submit" class="primary-btn">Save Changes</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+  <div id="app-alert" class="app-alert"></div>
+</body>
+</html>

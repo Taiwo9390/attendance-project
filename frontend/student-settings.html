@@ -11,6 +11,7 @@
     rel="stylesheet"
   />
   <link rel="stylesheet" href="student-settings.css" />
+  <link rel="stylesheet" href="attendsure-ui.css" />
 </head>
 <body>
   <div class="bg-orb orb-one"></div>
@@ -90,6 +91,21 @@
         </div>
 
         <form id="student-settings-form">
+          <div class="input-group">
+            <label for="settings-full-name">Full Name</label>
+            <input type="text" id="settings-full-name" placeholder="Enter your full name" required />
+          </div>
+
+          <div class="input-group">
+            <label for="settings-matric-number">Matric Number</label>
+            <input type="text" id="settings-matric-number" placeholder="Enter your matric number" required />
+          </div>
+
+          <div class="input-group">
+            <label for="settings-department">Department</label>
+            <input type="text" id="settings-department" placeholder="Enter your department" required />
+          </div>
+
           <div class="input-group">
             <label for="settings-level">Level</label>
             <select id="settings-level" required>
