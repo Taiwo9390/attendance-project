@@ -146,31 +146,27 @@ body:not(.light-theme) .report-table td {
 .history-view-btn,
 .primary-btn,
 .danger-btn,
-.report-btn {
+.report-btn,
+button,
+input[type="submit"],
+input[type="button"],
+input[type="reset"] {
   border-radius: var(--as-radius) !important;
   min-height: 44px;
-  box-shadow: none !important;
-  text-decoration: none;
-}
-
-.ghost-btn,
-.secondary-btn,
-.history-toggle-btn {
   background: var(--as-surface) !important;
   border: 1px solid var(--as-border-strong) !important;
-  color: #374151 !important;
+  color: var(--as-text) !important;
+  text-decoration: none !important;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08) !important;
+  transition: transform 0.3s ease-out, background-color 0.3s ease-out, color 0.3s ease-out, box-shadow 0.3s ease-out !important;
 }
 
 .primary-btn,
 .report-btn {
-  background: var(--as-primary) !important;
-  border: 1px solid var(--as-primary) !important;
-  color: #ffffff !important;
+  border-color: var(--as-primary) !important;
 }
 
 .danger-btn {
-  background: var(--as-surface) !important;
-  border: 1px solid var(--as-border-strong) !important;
   color: #4b5563 !important;
 }
 
@@ -179,9 +175,17 @@ body:not(.light-theme) .report-table td {
 .secondary-btn:hover,
 .danger-btn:hover,
 .history-toggle-btn:hover,
-.history-view-btn:hover {
+.history-view-btn:hover,
+.report-btn:hover,
+button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+input[type="reset"]:hover {
+  background: var(--as-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--as-primary) !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.18) !important;
 }
 
 .primary-btn:active,
@@ -190,8 +194,13 @@ body:not(.light-theme) .report-table td {
 .danger-btn:active,
 .history-toggle-btn:active,
 .history-view-btn:active,
+.report-btn:active,
 .pro-button:active,
-.side-nav-item:active {
+.side-nav-item:active,
+button:active,
+input[type="submit"]:active,
+input[type="button"]:active,
+input[type="reset"]:active {
   transform: translateY(0) scale(0.98) !important;
   filter: saturate(1.2);
 }
@@ -202,6 +211,7 @@ body:not(.light-theme) .report-table td {
 .danger-btn:focus-visible,
 .history-toggle-btn:focus-visible,
 .history-view-btn:focus-visible,
+.report-btn:focus-visible,
 input:focus-visible,
 select:focus-visible {
   outline: 3px solid rgba(79, 70, 229, 0.22) !important;
