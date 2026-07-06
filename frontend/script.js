@@ -1875,6 +1875,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 let deferredInstallPrompt = null;
 
+function isMobileBrowser() {
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
 function initPwaInstallNotice() {
   const banner = document.createElement("div");
   banner.id = "pwa-install-banner";
@@ -1883,7 +1887,7 @@ function initPwaInstallNotice() {
     <div class="install-banner-inner">
       <div>
         <strong>Install AttendSure</strong>
-        <p>Add this app to your home screen for faster access and offline support.</p>
+        <p id="install-banner-message">Add this app to your home screen for faster access and offline support.</p>
       </div>
       <div class="install-banner-actions">
         <button id="install-app-btn" class="primary-btn">Install</button>
@@ -1896,33 +1900,62 @@ function initPwaInstallNotice() {
 
   const installButton = banner.querySelector("#install-app-btn");
   const dismissButton = banner.querySelector("#dismiss-install-btn");
+  const installMessage = banner.querySelector("#install-banner-message");
+
+  function showBanner(message, showButton = true) {
+    installMessage.textContent = message;
+    installButton.style.display = showButton ? "inline-flex" : "none";
+    if (!showButton) {
+      installButton.textContent = "Use browser menu";
+    }
+    banner.classList.remove("hidden");
+    banner.classList.add("visible");
+  }
+
+  function hideBanner() {
+    banner.classList.remove("visible");
+    banner.classList.add("hidden");
+  }
 
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     deferredInstallPrompt = event;
-    banner.classList.remove("hidden");
+    showBanner("Install AttendSure to your home screen for faster access and offline support.", true);
   });
 
   installButton.addEventListener("click", async () => {
-    if (!deferredInstallPrompt) return;
-    banner.classList.add("hidden");
-    deferredInstallPrompt.prompt();
-    const choice = await deferredInstallPrompt.userChoice;
-    if (choice.outcome === "accepted") {
-      showAppAlert("Install completed. Open AttendSure from your home screen.", "success");
-    } else {
-      showAppAlert("Install cancelled. You can install later from your browser menu.", "info");
+    if (deferredInstallPrompt) {
+      hideBanner();
+      deferredInstallPrompt.prompt();
+      const choice = await deferredInstallPrompt.userChoice;
+      if (choice.outcome === "accepted") {
+        showAppAlert("Install completed. Open AttendSure from your home screen.", "success");
+      } else {
+        showAppAlert("Install cancelled. You can install later from your browser menu.", "info");
+      }
+      deferredInstallPrompt = null;
+      return;
     }
-    deferredInstallPrompt = null;
+
+    showAppAlert("Use your browser menu and choose 'Add to Home screen' to install the app.", "info");
   });
 
-  dismissButton.addEventListener("click", () => {
-    banner.classList.add("hidden");
-  });
+  dismissButton.addEventListener("click", hideBanner);
 
   window.addEventListener("appinstalled", () => {
     showAppAlert("AttendSure has been installed.", "success");
-    banner.classList.add("hidden");
+    hideBanner();
+  });
+
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      if (!deferredInstallPrompt && isMobileBrowser()) {
+        showBanner(
+          "If direct install is unavailable, use your browser menu and choose 'Add to Home screen'.",
+          false
+        );
+      }
+    }, 1200);
   });
 }
 
