@@ -1,5 +1,6 @@
 [build]
-  publish = "frontend"
+  base = "frontend"
+  publish = "."
   command = "echo 'No frontend build required for static site'"
 
 [dev]
