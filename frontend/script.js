@@ -1,5 +1,5 @@
 
-const API_BASE = "https://attend-sure-t9r4.onrender.com/api";
+const API_BASE = window.API_BASE || "https://attend-sure-t9r4.onrender.com/api";
 
 const STORAGE_KEYS = {
   theme: "attendsure_theme",
@@ -1870,7 +1870,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderLecturerProfileIdentity();
   renderStudentProfileIdentity();
+  initPwaInstallNotice();
 });
+
+let deferredInstallPrompt = null;
+
+function initPwaInstallNotice() {
+  const banner = document.createElement("div");
+  banner.id = "pwa-install-banner";
+  banner.className = "install-banner hidden";
+  banner.innerHTML = `
+    <div class="install-banner-inner">
+      <div>
+        <strong>Install AttendSure</strong>
+        <p>Add this app to your home screen for faster access and offline support.</p>
+      </div>
+      <div class="install-banner-actions">
+        <button id="install-app-btn" class="primary-btn">Install</button>
+        <button id="dismiss-install-btn" class="ghost-btn">Dismiss</button>
+      </div>
+    </div>
+  `;
+
+  document.body.prepend(banner);
+
+  const installButton = banner.querySelector("#install-app-btn");
+  const dismissButton = banner.querySelector("#dismiss-install-btn");
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    banner.classList.remove("hidden");
+  });
+
+  installButton.addEventListener("click", async () => {
+    if (!deferredInstallPrompt) return;
+    banner.classList.add("hidden");
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice;
+    if (choice.outcome === "accepted") {
+      showAppAlert("Install completed. Open AttendSure from your home screen.", "success");
+    } else {
+      showAppAlert("Install cancelled. You can install later from your browser menu.", "info");
+    }
+    deferredInstallPrompt = null;
+  });
+
+  dismissButton.addEventListener("click", () => {
+    banner.classList.add("hidden");
+  });
+
+  window.addEventListener("appinstalled", () => {
+    showAppAlert("AttendSure has been installed.", "success");
+    banner.classList.add("hidden");
+  });
+}
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker

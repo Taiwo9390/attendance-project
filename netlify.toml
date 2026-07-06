@@ -1,0 +1,12 @@
+[build]
+  publish = "frontend"
+  command = "echo 'No frontend build required for static site'"
+
+[dev]
+  port = 8888
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://attend-sure-t9r4.onrender.com/api/:splat"
+  status = 200
+  force = true
